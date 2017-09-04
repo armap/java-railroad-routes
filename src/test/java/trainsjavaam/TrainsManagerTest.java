@@ -4,25 +4,22 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 
-import junit.framework.TestCase;
-
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import trainsjavaam.model.EdgeRoute;
 
 
-public class TrainsManagerTest extends TestCase{
+public class TrainsManagerTest {
 
-	private static TrainsManager trainsManager; 
+	private static TrainsManager trainsMgr; 
 	
 	/**
 	 * @throws java.lang.Exception
 	 */
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		trainsManager = TrainsManager.getInstance();
+		trainsMgr = TrainsManager.getInstance();
 	}
 	
 	@Test
@@ -35,12 +32,14 @@ public class TrainsManagerTest extends TestCase{
 		assertEquals(7, lastEdgeRoute.getDistance());
 	}
 
-//	@Test
-//	public void testDistanceAlongRoute() {
-//		
-//		trainsManager.distanceAlongRoute(route);
-//		
-//		fail("Not yet implemented");
-//	}
+	@Test
+	public void testDistanceAlongRoute() {
+			
+		assertEquals("9", trainsMgr.distanceAlongRoute("ABC"));
+		assertEquals("5", trainsMgr.distanceAlongRoute("AD"));
+		assertEquals("13", trainsMgr.distanceAlongRoute("ADC"));
+		assertEquals("22", trainsMgr.distanceAlongRoute("AEBCD"));
+		assertEquals("NO SUCH ROUTE", trainsMgr.distanceAlongRoute("AED"));
+	}
 
 }
