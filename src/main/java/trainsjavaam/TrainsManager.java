@@ -25,7 +25,7 @@ public class TrainsManager {
 		return trainsManager;
 	}
 
-	private List<EdgeRoute> generateEdgeRoutesGraph(){
+	private void generateEdgeRoutesGraph(){
 		edgeRoutesGraph = new ArrayList<>();
 
 		String fileName = "EdgeRoutesGraph.txt";
@@ -48,7 +48,6 @@ public class TrainsManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-		return null;
 	}
 	public static List<EdgeRoute> getEdgeRoutesGraph() {
 		return edgeRoutesGraph;
