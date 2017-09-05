@@ -5,18 +5,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import trainsjavaam.model.EdgeRoute;
+import trainsjavaam.model.NodeTown;
 
 
 public class TrainsManager {
 
+	private static final String NO_SUCH_ROUTE = "NO SUCH ROUTE";
 	private static TrainsManager trainsManager = new TrainsManager( );
 	private static List<EdgeRoute> edgeRoutesGraph;	
+	private static Map<String,NodeTown> nodeTownsGraph;	
 
 	private TrainsManager() {
 		generateEdgeRoutesGraph();
@@ -28,6 +34,7 @@ public class TrainsManager {
 
 	private void generateEdgeRoutesGraph(){
 		edgeRoutesGraph = new ArrayList<>();
+		nodeTownsGraph = new HashMap<>();
 
 		String fileName = "EdgeRoutesGraph.txt";
 		Path filePath = Paths.get(getClass().getClassLoader().getResource(fileName).getPath());
@@ -44,6 +51,14 @@ public class TrainsManager {
 					e.printStackTrace();
 				}
 				edgeRoutesGraph.add(new EdgeRoute(startingTown, endingTown, distance));	
+				if(nodeTownsGraph.containsKey(startingTown)){
+					nodeTownsGraph.get(startingTown).getDestinations().put(endingTown, distance);
+				}else{
+					Map<String,Integer> destinations = new HashMap<>();
+					destinations.put(endingTown, distance);
+					NodeTown nodeTown = new NodeTown(startingTown, destinations);
+					nodeTownsGraph.put(startingTown, nodeTown);
+				}
 			});
 
 		} catch (IOException e) {
@@ -53,7 +68,9 @@ public class TrainsManager {
 	public static List<EdgeRoute> getEdgeRoutesGraph() {
 		return edgeRoutesGraph;
 	}
-
+	public static Map<String,NodeTown> getNodeTownsGraph() {
+		return nodeTownsGraph;
+	}
 	/*	Compute the distance along a certain route	
 
 	Input: Route ABC = A-B + B-C
@@ -98,7 +115,7 @@ public class TrainsManager {
 			if( ! iterator.hasNext() && ! remainingEdgeRoutesGraph.isEmpty())
 				iterator = remainingEdgeRoutesGraph.iterator();
 		}
-		return "NO SUCH ROUTE";
+		return NO_SUCH_ROUTE;
 	}
 
 	public int numRoutesBetween2TownsWithMaxDistance(String startingTown, String endingTown, int maxDistance){
@@ -107,7 +124,6 @@ public class TrainsManager {
 		recursiveNumRoutesBetween2TownsWithMaxDistance(startingTown, endingTown, maxDistance, distance, routes);
 		return routes[0];	
 	}
-	
 	private void recursiveNumRoutesBetween2TownsWithMaxDistance(
 			String startingTown, String endingTown, int maxDistance, int distance, int[] routes) 
 	{
@@ -130,54 +146,128 @@ public class TrainsManager {
 
 	public int numRoutesBetween2TownsWithMaxStops(String startingTown, String endingTown, int maxStops){
 		int[] routes = {0};
-		int stops = 0;
-		// The number of trips starting at A and ending at C with exactly 4 stops.  
-		//In the sample data below, there are three such trips: 
-//		A to C (via B,C,D); 
-//		A to C (via D,C,D);  
-//		A to C (via D,E,B).
-		
-		recursiveNumRoutesBetween2TownsWithMaxStops(startingTown, endingTown, maxStops, stops, routes);
-		
+		recursiveNumRoutesBetween2TownsWithMaxStops(startingTown, endingTown, maxStops, routes);	
 		return routes[0];
 	}
-	
-	private void recursiveNumRoutesBetween2TownsWithMaxStops(String startingTown, String endingTown, int maxStops, int stops, int[] routes){
-		//startingTown A
-		//endingTown C
-		//maxStops 4
+	private void recursiveNumRoutesBetween2TownsWithMaxStops(
+			String startingTown, String endingTown, int maxStops, int[] routes)
+	{
 		if(maxStops==0) return;
 		int newMaxStops = maxStops - 1;
 
 		List<EdgeRoute> edgesWithStartTown = edgeRoutesGraph.stream()
 				.filter(edgeRoute -> startingTown.equals(edgeRoute.getStartingTown()))
 				.collect(Collectors.toList());
-		// edgesWithStartTown AB5 - AD5 - AE7
-		
-		// AC?? starting-ending?
-//		if(edgesWithStartTown.stream().anyMatch(edgeRoute -> endingTown.equals(edgeRoute.getEndingTown()))){
-//			routes +=1;
-//		}
-		
-		// edgesWithStartTown AB5 - AD5 - AE7
-		
 		for(EdgeRoute edge : edgesWithStartTown){
-			//edge AB5
 			if(endingTown.equals(edge.getEndingTown())){
 				routes[0] +=1;
-//				continue;
 			}
 			String newStartingTown = edge.getEndingTown();
-			//newStartingTown B
-			//endingTown C
-
-			//START AGAIN
-			recursiveNumRoutesBetween2TownsWithMaxStops(newStartingTown, endingTown, newMaxStops, stops, routes);
-			
+			recursiveNumRoutesBetween2TownsWithMaxStops(newStartingTown, endingTown, newMaxStops, routes);		
 		}
 		return;
 	}
 
+	public int numRoutesBetween2TownsWithExactStops(String startingTown, String endingTown, int exactStops){
+		// The number of trips starting at A and ending at C with exactly 4 stops.  
+		//In the sample data below, there are three such trips: 
+		//		A to C (via B,C,D); 
+		//		A to C (via D,C,D);  
+		//		A to C (via D,E,B).
+		int[] routes = {0};
+		int stops = 0;		
+		recursiveNumRoutesBetween2TownsWithExactStops(startingTown, endingTown, exactStops, stops, routes);	
+		return routes[0];
+	}
+	private void recursiveNumRoutesBetween2TownsWithExactStops(
+			String startingTown, String endingTown, int exactStops, int stops, int[] routes)
+	{
+		int newStops = stops + 1;
+
+		List<EdgeRoute> edgesWithStartTown = edgeRoutesGraph.stream()
+				.filter(edgeRoute -> startingTown.equals(edgeRoute.getStartingTown()))
+				.collect(Collectors.toList());
+
+		if(newStops < exactStops){
+			for(EdgeRoute edge : edgesWithStartTown){
+				String newStartingTown = edge.getEndingTown();
+				recursiveNumRoutesBetween2TownsWithExactStops(newStartingTown, endingTown, exactStops, newStops, routes);	
+			}
+		}else if (newStops == exactStops){
+			for(EdgeRoute edge : edgesWithStartTown){
+				if(endingTown.equals(edge.getEndingTown())){
+					routes[0] +=1;
+				}
+			}
+		}
+		return;
+	}
+
+	public String NO_shortestDistanceRouteBetween2Towns(String startingTown, String endingTown){		
+
+		//		Map<LinkedList<String>, Integer> allRoutes = new LinkedHashMap<>();
+		//		LinkedList<String> route = new LinkedList<>();
+		//		route.add(startingTown);
+
+		int distance = 0;
+		int[] shortestDistance = new int[1];
+
+		NO_recursiveShortestDistanceRouteBetween2Towns(startingTown, endingTown, distance, shortestDistance);
+		//		return Collections.min(allRoutes.values());
+
+		if(shortestDistance[0] == 0) return NO_SUCH_ROUTE;
+		return String.valueOf(shortestDistance[0]);
+	}
+	private void NO_recursiveShortestDistanceRouteBetween2Towns(
+			String startingTown, String endingTown, int distance, int[] shortestDistance) 
+	{
+		List<EdgeRoute> edgesWithStartTown = edgeRoutesGraph.stream()
+				.filter(edgeRoute -> startingTown.equals(edgeRoute.getStartingTown()))
+				.collect(Collectors.toList());
+
+		for(EdgeRoute edge : edgesWithStartTown){
+			int newDistance = distance + edge.getDistance();
+			//			if(newDistance >= 30) continue;
+			//			LinkedList<String> newRoute = new LinkedList<>();
+			//			newRoute.addAll(route);
+			//			newRoute.add(edge.getEndingTown());
+
+			if(shortestDistance[0] != 0 && newDistance >= shortestDistance[0]) 
+				continue;
+
+			if(endingTown.equals(edge.getEndingTown())){
+				//				routes[0] +=1;
+				//				allRoutes.put(newRoute, newDistance);
+				if(shortestDistance[0] == 0 || newDistance < shortestDistance[0]){
+					shortestDistance[0] = newDistance;
+				}
+				continue;
+			}
+			String newStartingTown = edge.getEndingTown();
+			NO_recursiveShortestDistanceRouteBetween2Towns(newStartingTown, endingTown, newDistance, shortestDistance);
+		}
+		return;
+	}
+	/*	Compute the shortest route between two towns
+	 * 
+	 * 	Input: Starting town: A. Ending town: C. 
+	 * 
+	 * 		DistancesRoutes[]: 0
+
+		search edges that starts with A. Get 2nd towns = X , L
+		search edges that ends with C. Get 1st towns = Y , M
+
+		if X=Y .  DistancesRoutes+= ACdist
+		else:
+		search edges that starts with X or L. Get 2nd towns = R...
+		search edges that ends with Y or M. Get 1st towns = S...
+
+		if R=S .  DistancesRoutes+= XYdist
+		else: LOOP 
+
+		Finally find shortest from DistanceRoutes.
+
+	 */	
 
 
 	/*	Compute the number of different routes between two towns
@@ -225,26 +315,53 @@ public class TrainsManager {
 	 * 
 	 */
 
+	public String shortestDistanceRouteBetween2Towns(String startingTown, String endingTown){		
+		int distance = 0;
+		int[] shortestDistance = new int[1];
 
-	/*	Compute the shortest route between two towns
-	 * 
-	 * 	Input: Starting town: A. Ending town: C. 
-	 * 
-	 * 		DistancesRoutes[]: 0
+		recursiveShortestDistanceRouteBetween2Towns(startingTown, endingTown, distance, shortestDistance);
 
-		search edges that starts with A. Get 2nd towns = X , L
-		search edges that ends with C. Get 1st towns = Y , M
+		if(shortestDistance[0] == 0) return NO_SUCH_ROUTE;
+		return String.valueOf(shortestDistance[0]);
+	}
+	private void recursiveShortestDistanceRouteBetween2Towns(
+			String startingTown, String endingTown, int distance, int[] shortestDistance) 
+	{
+		NodeTown originNodeTown = nodeTownsGraph.get(startingTown);
+		// Set that origin NodeTown is in current route to avoid on a future iteration passing again through this town.
+		// The goal is to find the shortest route, so doesn't make sense a route that passes through the same town many times.
+		originNodeTown.setInCurrentRoute(true);
 
-		if X=Y .  DistancesRoutes+= ACdist
-		else:
-		search edges that starts with X or L. Get 2nd towns = R...
-		search edges that ends with Y or M. Get 1st towns = S...
+		Map<String, Integer> destinations = originNodeTown.getDestinations();
+		if(destinations==null) return;
 
-		if R=S .  DistancesRoutes+= XYdist
-		else: LOOP 
+		for(Entry<String,Integer> destination : destinations.entrySet()){
+			String destinationTown = destination.getKey();
+			NodeTown destinationNodeTown = nodeTownsGraph.get(destinationTown);
 
-		Finally find shortest from DistanceRoutes.
-
-	 */		
-
+			int newDistance = distance + destination.getValue();
+			if(shortestDistance[0] != 0 && newDistance >= shortestDistance[0]){ 
+				// The route cannot include Destination town because
+				// its distance is longer than the shortest distance found so far.
+				continue;
+			}else if(endingTown.equals(destinationTown)){
+				shortestDistance[0] = newDistance;
+				// Route finished: Destination town matches Ending town with the shortest distance so far.
+				// Starting town and Ending town CAN be the same.
+				continue;
+			}else if(destinationNodeTown.isInCurrentRoute()){
+				// Destination town doesn't match Ending town but it can't be included
+				// in the route because it's already in it.
+				continue;
+			}else{
+				// Destination town doesn't match Ending town, so we include it into the 
+				// route and keep searching.
+				recursiveShortestDistanceRouteBetween2Towns(destinationTown, endingTown, newDistance, shortestDistance);
+			}
+		}
+		// This town has no more destinations, so we go backwards 
+		// to the previous town and remove this town from the route.
+		originNodeTown.setInCurrentRoute(false);
+		return;
+	}
 }
