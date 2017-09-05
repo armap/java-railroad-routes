@@ -41,5 +41,22 @@ public class TrainsManagerTest {
 		assertEquals("22", trainsMgr.distanceAlongRoute("AEBCD"));
 		assertEquals("NO SUCH ROUTE", trainsMgr.distanceAlongRoute("AED"));
 	}
+	
+	@Test
+	public void testNumRoutesBetween2TownsWithMaxStops() {
+			
+		assertEquals(2, trainsMgr.numRoutesBetween2TownsWithMaxStops("C","C", 3));
+	}
+	@Test
+	public void testNumRoutesBetween2TownsWithExactStops() {
+			
+//		assertEquals(3, trainsMgr.numRoutesBetween2TownsWithExactStops("A","C", 4));
+	}
+	@Test
+	public void testNumRoutesBetween2TownsWithMaxDistance() {
+			
+		assertEquals(7, trainsMgr.numRoutesBetween2TownsWithMaxDistance("C","C", 30));
+	}
+	
 
 }
