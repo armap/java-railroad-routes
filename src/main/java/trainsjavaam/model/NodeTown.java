@@ -6,6 +6,11 @@ public class NodeTown {
 	
 	private String town;
 	private boolean inCurrentRoute;
+
+	/* destinations Map has:
+	 * -KEY: destination town
+	 * -VALUE: distance to destination town
+	 */
 	private Map<String, Integer> destinations;
 	
 	

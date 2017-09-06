@@ -3,13 +3,11 @@ package trainsjavaam;
 import static org.junit.Assert.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import trainsjavaam.model.EdgeRoute;
 import trainsjavaam.model.NodeTown;
 
 
@@ -25,15 +23,6 @@ public class TrainsManagerTest {
 		trainsMgr = TrainsManager.getInstance();
 	}
 	
-	@Test
-	public void testEdgeRoutesGraph(){
-		List<EdgeRoute> edgeRoutesGraph = TrainsManager.getEdgeRoutesGraph();
-		EdgeRoute lastEdgeRoute = edgeRoutesGraph.get(8);
-		
-		assertEquals("A", lastEdgeRoute.getStartingTown());
-		assertEquals("E", lastEdgeRoute.getEndingTown());
-		assertEquals(7, lastEdgeRoute.getDistance());
-	}
 	@Test
 	public void testNodeTownsGraph(){
 		Map<String,NodeTown> nodeTownsGraph = TrainsManager.getNodeTownsGraph();
@@ -73,6 +62,4 @@ public class TrainsManagerTest {
 		assertEquals("9", trainsMgr.shortestDistanceRouteBetween2Towns("A","C"));
 		assertEquals("9", trainsMgr.shortestDistanceRouteBetween2Towns("B","B"));
 	}
-	
-
 }
