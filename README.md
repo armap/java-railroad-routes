@@ -1,5 +1,5 @@
 # JAVA TRAINS #
-* Java application for managing the railroad routes between different towns.
+* Java application for managing the railroad routes between different towns conforming a Directed Graph.
 
 # CONFIGURATION #
 * Language: Java (JDK 8)
@@ -13,9 +13,15 @@ To check it, import the project into Eclipse using Maven and then run the tests 
 
 # APP DESIGN #
 The app is composed by the following classes and files:
+
 - TrainsManager.java: Singleton class that contains all the methods with business logic.
-- NodeTown.java: Model POJO class to store data for a specific town with its destination towns and its distances.
+
+- OriginTown.java: Model class to store data for an origin town with a list of all its destination towns. (Node in the directed graph)
+
+- DestinationTown.java: Model class to store data for a destination town with its distance from the origin town. (Edge in the directed graph)
+
 - EdgeRoutesGraph.txt: Text File located in Resources that contains all the routes between two towns and its distances. This file is read by TrainsManager.java to create the static Graph for all towns and routes.
+
 - TrainsManagerTest.java: Testing class.
 
 # PROBLEM DESCRIPTION #

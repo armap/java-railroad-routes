@@ -1,20 +1,15 @@
 package trainsjavaam.model;
 
-import java.util.Map;
+import java.util.List;
 
-public class NodeTown {
+public class OriginTown {
 	
 	private String town;
 	private boolean inCurrentRoute;
-
-	/* destinations Map has:
-	 * -KEY: destination town
-	 * -VALUE: distance to destination town
-	 */
-	private Map<String, Integer> destinations;
+	private List<DestinationTown> destinations;
 	
 	
-	public NodeTown(String town,  Map<String, Integer> destinations) {
+	public OriginTown(String town,  List<DestinationTown> destinations) {
 		this.town = town;
 		this.setInCurrentRoute(false);
 		this.destinations = destinations;
@@ -36,11 +31,11 @@ public class NodeTown {
 		this.inCurrentRoute = inCurrentRoute;
 	}
 
-	public Map<String, Integer> getDestinations() {
+	public List<DestinationTown> getDestinations() {
 		return destinations;
 	}
 
-	public void setDestinations(Map<String, Integer> destinations) {
+	public void setDestinations(List<DestinationTown> destinations) {
 		this.destinations = destinations;
 	}
 

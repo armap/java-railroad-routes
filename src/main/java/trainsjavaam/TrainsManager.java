@@ -4,20 +4,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Stream;
 
-import trainsjavaam.model.NodeTown;
+import trainsjavaam.model.DestinationTown;
+import trainsjavaam.model.OriginTown;
 
 
 public class TrainsManager {
 
 	private static final String NO_SUCH_ROUTE = "NO SUCH ROUTE";
-	
+
 	private static TrainsManager trainsManager = new TrainsManager( );
-	private static Map<String,NodeTown> nodeTownsGraph;	
+	private static Map<String,OriginTown> nodeTownsGraph;	
 
 	private TrainsManager() {
 		generateNodeTownsGraph();
@@ -44,26 +46,29 @@ public class TrainsManager {
 					e.printStackTrace();
 				}
 				if(nodeTownsGraph.containsKey(startingTown)){
-					// Add destination into an existing NodeTown
-					nodeTownsGraph.get(startingTown).getDestinations().put(endingTown, distance);
+					// Add destinationTown into an existing OriginTown
+					nodeTownsGraph.get(startingTown).getDestinations().add(new DestinationTown(endingTown, distance));
 				}else{
-					// Create new NodeTown with its destination
-					Map<String,Integer> destinations = new HashMap<>();
-					destinations.put(endingTown, distance);
-					NodeTown nodeTown = new NodeTown(startingTown, destinations);
-					nodeTownsGraph.put(startingTown, nodeTown);
+					// Create new OriginTown with its new destinationTown
+					List<DestinationTown> destinations = new ArrayList<>();
+					destinations.add(new DestinationTown(endingTown, distance));
+					OriginTown originTown = new OriginTown(startingTown, destinations);
+					nodeTownsGraph.put(startingTown, originTown);
 				}
 			});
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
 	}
-	public static Map<String,NodeTown> getNodeTownsGraph() {
+	public static Map<String,OriginTown> getNodeTownsGraph() {
 		return nodeTownsGraph;
 	}
 
 	/**
 	 * Computes the distance along a given route.
+	 * Time complexity: (T = towns in given route) (N = nodeTowns in Graph) (E = edgeRoutes in Graph)
+	 * - Average Case: O(T*1+E)
+	 * - Worst Case: O(T*N+E)  --very low probability with Hashmap.get()--
 	 * @param routeStr
 	 * @return distance or "NO SUCH ROUTE"
 	 */
@@ -76,25 +81,34 @@ public class TrainsManager {
 			String originTownInRoute = route[i];
 			String destinationTownInRoute = route[i+1];
 
-			if( ! nodeTownsGraph.containsKey(originTownInRoute))
+			OriginTown originTown = nodeTownsGraph.get(originTownInRoute);
+			if( originTown == null)
 				// This town doesn't exist in the Graph
 				return NO_SUCH_ROUTE;
-			NodeTown originNodeTown = nodeTownsGraph.get(originTownInRoute);
 
-			Map<String, Integer> destinations = originNodeTown.getDestinations();
-			if(destinations==null || ! destinations.containsKey(destinationTownInRoute))
-				// The edgeRoute between the origin town and 
-				// the destination town doesn't exist in the Graph.
+			List<DestinationTown> destinations = originTown.getDestinations();
+			if(destinations==null)
 				return NO_SUCH_ROUTE;
 			
-			// Add distance from origin town to destination town.
-			distance += destinations.get(destinationTownInRoute);	
+			boolean routeToDestinationFound = false;
+			for(DestinationTown destination : destinations){
+				if(destinationTownInRoute.equals(destination.getTown())){
+					// Add distance from origin town to destination town.
+					distance += destination.getDistanceFromOriginTown();
+					routeToDestinationFound = true;
+					break;
+				}
+			}
+			if(routeToDestinationFound == false) 
+				return NO_SUCH_ROUTE;
 		}
 		return String.valueOf(distance);
 	}
 
 	/**
 	 * Computes the number of different routes between 2 given towns, with a maximum of X stops.
+	 * Time complexity: (S = max stops) (E = edgeRoutes in Graph)
+	 * - Worst Case: O(1+E^S)  --HashMap.get() is considered with its Average Case: O(1)--
 	 * @param startingTown
 	 * @param endingTown
 	 * @param maxStops
@@ -114,28 +128,27 @@ public class TrainsManager {
 		// Each new town included in the route, decreases maxStops by 1.
 		int newMaxStops = maxStops - 1;
 
-		if(nodeTownsGraph.containsKey(startingTown)){
-			NodeTown originNodeTown = nodeTownsGraph.get(startingTown);
+		OriginTown originTown = nodeTownsGraph.get(startingTown);
+		if(originTown == null) return;
+		List<DestinationTown> destinations = originTown.getDestinations();
+		if(destinations == null) return;
 
-			Map<String, Integer> destinations = originNodeTown.getDestinations();
-			if(destinations!=null){				
-				for(Entry<String,Integer> destination : destinations.entrySet()){
+		for(DestinationTown destination : destinations){
 
-					String destinationTown = destination.getKey();
-					if(endingTown.equals(destinationTown)){
-						// New route found
-						routes[0] +=1;	
-					}
-					// Let's move to destinationTown to see which routes to other towns does it have.
-					recursiveNumRoutesBetween2TownsWithMaxStops(destinationTown, endingTown, newMaxStops, routes);		
-				}
+			if(endingTown.equals(destination.getTown())){
+				// New route found
+				routes[0] +=1;	
 			}
+			// Let's move to destinationTown to see which routes to other towns does it have.
+			recursiveNumRoutesBetween2TownsWithMaxStops(destination.getTown(), endingTown, newMaxStops, routes);		
 		}
 		return;
 	}
 
 	/**
 	 * Computes the number of different routes between 2 given towns, with exactly X stops.
+	 * Time complexity: (S = exact stops) (E = edgeRoutes in Graph)
+	 * - Worst Case: O(1+E^S)	 --HashMap.get() is considered with its Average Case: O(1)--
 	 * @param startingTown
 	 * @param endingTown
 	 * @param exactStops
@@ -155,24 +168,21 @@ public class TrainsManager {
 		// Each new town included in the route, increases stops by 1
 		int newStops = stops + 1;
 
-		if(nodeTownsGraph.containsKey(startingTown)){
-			NodeTown originNodeTown = nodeTownsGraph.get(startingTown);
+		OriginTown originTown = nodeTownsGraph.get(startingTown);
+		if(originTown == null) return;
+		List<DestinationTown> destinations = originTown.getDestinations();
+		if(destinations == null) return;	
 
-			Map<String, Integer> destinations = originNodeTown.getDestinations();
-			if(destinations!=null){	
-
-				if(newStops < exactStops){
-					for(Entry<String,Integer> destination : destinations.entrySet()){	
-						// Let's move to destinationTown to see which routes to other towns does it have.
-						recursiveNumRoutesBetween2TownsWithExactStops(destination.getKey(), endingTown, exactStops, newStops, routes);	
-					}
-				}else if (newStops == exactStops){
-					for(Entry<String,Integer> destination : destinations.entrySet()){		
-						if(endingTown.equals(destination.getKey())){
-							// New route found
-							routes[0] +=1;	
-						}
-					}
+		if(newStops < exactStops){
+			for(DestinationTown destination : destinations){
+				// Let's move to destinationTown to see which routes to other towns does it have.
+				recursiveNumRoutesBetween2TownsWithExactStops(destination.getTown(), endingTown, exactStops, newStops, routes);	
+			}
+		}else if (newStops == exactStops){	
+			for(DestinationTown destination : destinations){
+				if(endingTown.equals(destination.getTown())){
+					// New route found
+					routes[0] +=1;	
 				}
 			}
 		}
@@ -180,7 +190,7 @@ public class TrainsManager {
 	}
 
 	/**
-	 * Computes the number of different routes between 2 given towns, with a maximum of X distance.
+	 * Computes the number of different routes between 2 given towns, with a maximum of X distance.	
 	 * @param startingTown
 	 * @param endingTown
 	 * @param maxDistance
@@ -197,29 +207,26 @@ public class TrainsManager {
 	private void recursiveNumRoutesBetween2TownsWithMaxDistance(
 			String startingTown, String endingTown, int maxDistance, int distance, int[] routes) 
 	{
-		if(nodeTownsGraph.containsKey(startingTown)){
-			NodeTown originNodeTown = nodeTownsGraph.get(startingTown);
+		OriginTown originTown = nodeTownsGraph.get(startingTown);
+		if(originTown == null) return;
+		List<DestinationTown> destinations = originTown.getDestinations();
+		if(destinations == null) return;
 
-			Map<String, Integer> destinations = originNodeTown.getDestinations();
-			if(destinations!=null){
-				for(Entry<String,Integer> destination : destinations.entrySet()){
-					// Add distance to the last destination into the route's distance.
-					int newDistance = distance + destination.getValue();
-					if(newDistance >= maxDistance) continue;
+		for(DestinationTown destination : destinations){
+			// Add distance to the last destination into the route's distance.
+			int newDistance = distance + destination.getDistanceFromOriginTown();
+			if(newDistance >= maxDistance) continue;
 
-					String destinationTown = destination.getKey();
-					if(endingTown.equals(destinationTown)){
-						// New route found
-						routes[0] +=1;	
-					}
-					// Let's move to destinationTown to see which routes to other towns does it have.
-					recursiveNumRoutesBetween2TownsWithMaxDistance(destinationTown, endingTown, maxDistance, newDistance, routes);	
-				}
+			if(endingTown.equals(destination.getTown())){
+				// New route found
+				routes[0] +=1;	
 			}
+			// Let's move to destinationTown to see which routes to other towns does it have.
+			recursiveNumRoutesBetween2TownsWithMaxDistance(destination.getTown(), endingTown, maxDistance, newDistance, routes);	
 		}
 		return;
 	}
-	
+
 	/**
 	 * Finds shortest distance route between 2 given towns.
 	 * @param startingTown
@@ -238,41 +245,40 @@ public class TrainsManager {
 	private void recursiveShortestDistanceRouteBetween2Towns(
 			String startingTown, String endingTown, int distance, int[] shortestDistance) 
 	{
-		NodeTown originNodeTown = nodeTownsGraph.get(startingTown);
-		// Set that origin NodeTown is in current route to avoid on a future iteration passing again through this town.
+		OriginTown originTown = nodeTownsGraph.get(startingTown);
+		if(originTown == null) return;
+		// Set that origin OriginTown is in current route to avoid on a future iteration passing again through this town.
 		// The goal is to find the shortest route, so doesn't make sense a route that passes through the same town many times.
-		originNodeTown.setInCurrentRoute(true);
+		originTown.setInCurrentRoute(true);
 
-		Map<String, Integer> destinations = originNodeTown.getDestinations();
-		if(destinations==null) return;
+		List<DestinationTown> destinations = originTown.getDestinations();
+		if(destinations == null) return;
 
-		for(Entry<String,Integer> destination : destinations.entrySet()){
-			String destinationTown = destination.getKey();
-			NodeTown destinationNodeTown = nodeTownsGraph.get(destinationTown);
+		for(DestinationTown destination : destinations){
 
-			int newDistance = distance + destination.getValue();
+			int newDistance = distance + destination.getDistanceFromOriginTown();
 			if(shortestDistance[0] != 0 && newDistance >= shortestDistance[0]){ 
 				// The route cannot include Destination town because
 				// its distance is longer than the shortest distance found so far.
 				continue;
-			}else if(endingTown.equals(destinationTown)){
+			}else if(endingTown.equals(destination.getTown())){
 				shortestDistance[0] = newDistance;
 				// Route finished: Destination town matches Ending town with the shortest distance so far.
 				// Starting town and Ending town CAN be the same.
 				continue;
-			}else if(destinationNodeTown.isInCurrentRoute()){
+			}else if(nodeTownsGraph.get(destination.getTown()).isInCurrentRoute()){
 				// Destination town doesn't match Ending town but it can't be included
 				// in the route because it's already in it.
 				continue;
 			}else{
 				// Destination town doesn't match Ending town, so we include it into the 
 				// route and keep searching.
-				recursiveShortestDistanceRouteBetween2Towns(destinationTown, endingTown, newDistance, shortestDistance);
+				recursiveShortestDistanceRouteBetween2Towns(destination.getTown(), endingTown, newDistance, shortestDistance);
 			}
 		}
 		// This town has no more destinations, so we go backwards 
 		// to the previous town and remove this town from the route.
-		originNodeTown.setInCurrentRoute(false);
+		originTown.setInCurrentRoute(false);
 		return;
 	}
 }

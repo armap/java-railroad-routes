@@ -2,13 +2,14 @@ package trainsjavaam;
 
 import static org.junit.Assert.*;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import trainsjavaam.model.NodeTown;
+import trainsjavaam.model.DestinationTown;
+import trainsjavaam.model.OriginTown;
 
 
 public class TrainsManagerTest {
@@ -25,16 +26,15 @@ public class TrainsManagerTest {
 	
 	@Test
 	public void testNodeTownsGraph(){
-		Map<String,NodeTown> nodeTownsGraph = TrainsManager.getNodeTownsGraph();
-		Map<String,Integer> destinations = nodeTownsGraph.get("A").getDestinations();
+		Map<String,OriginTown> nodeTownsGraph = TrainsManager.getNodeTownsGraph();
+		List<DestinationTown> destinations = nodeTownsGraph.get("A").getDestinations();
 		
-		Map<String,Integer> expectedDestinations = new HashMap<>();
-		expectedDestinations.put("B", 5);
-		expectedDestinations.put("D", 5);
-		expectedDestinations.put("E", 7);
-
-		assertEquals(expectedDestinations, destinations);
-
+		List<DestinationTown> expectedDestinations = new ArrayList<>();
+		expectedDestinations.add(new DestinationTown("B", 5));
+		expectedDestinations.add(new DestinationTown("D", 5));
+		expectedDestinations.add(new DestinationTown("E", 7));
+		
+		assertTrue(destinations.containsAll(expectedDestinations));
 	}
 
 	@Test
